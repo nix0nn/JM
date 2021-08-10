@@ -1,86 +1,35 @@
+import java.util.*;
+import java.nio.*;
+import java.io.*;
+
+
 public class Main {
-
-    enum Label {
-        SPAM, NEGATIVE_TEXT, TOO_LONG, OK
-    }
-
-    interface TextAnalyzer {
-        Label processText(String text);
-    }
-
     public static void main(String[] args) {
-    }
+        double result = 0;
+        Scanner in = new Scanner(System.in);
+        String str;
 
-    public Label checkLabels(TextAnalyzer[] analyzers, String text) {
-        Label result = Label.OK;
-        for (TextAnalyzer analyzer: analyzers) {
-            result = analyzer.processText(text);
-            if (result != Label.OK){
+        while (in.hasNextLine()) {
+            str = in.nextLine();
+            if (str.isEmpty()) {
                 break;
             }
-        }
-        return result;
-    }
-
-    public static abstract class KeywordAnalyzer implements TextAnalyzer{
-        protected abstract String[] getKeywords();
-        protected abstract Label getLabel();
-
-        @Override
-        public Label processText(String text) {
-            for (String element: getKeywords()) {
-                if (text.contains(element)) {
-                    return getLabel();
+            for (String str2: str.split(" ")) {
+                if (isDouble(str2)) {
+                    result += Double.parseDouble(str2);
                 }
             }
-            return Label.OK;
         }
+        System.out.printf("%.6f", result);
     }
 
-    public static class SpamAnalyzer extends KeywordAnalyzer {
-        private final String[] keywords;
-
-        public SpamAnalyzer(String[] keywords) {
-            this.keywords = keywords;
-        }
-
-        @Override
-        protected String[] getKeywords() {
-            return keywords;
-        }
-
-        @Override
-        protected Label getLabel() {
-            return Label.SPAM;
+    public static boolean isDouble(String str) throws NumberFormatException {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
-    public static class NegativeTextAnalyzer extends KeywordAnalyzer{
-
-        @Override
-        protected String[] getKeywords() {
-            return new String[]{":(", "=(", ":|"};
-        }
-
-        @Override
-        protected Label getLabel() {
-            return Label.NEGATIVE_TEXT;
-        }
-    }
-    public class TooLongTextAnalyzer implements TextAnalyzer{
-        private final int maxLength;
-
-        public TooLongTextAnalyzer(int maxLength) {
-            this.maxLength = maxLength;
-        }
-
-        @Override
-        public Label processText(String text) {
-            if (text.length() >= maxLength) {
-                return Label.TOO_LONG;
-            }
-            return Label.OK;
-        }
-    }
-
 
 }

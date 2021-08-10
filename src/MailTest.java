@@ -167,7 +167,7 @@ public class MailTest {
         }
     }
 
-    public class RealMailService implements MailService {
+    public static class RealMailService implements MailService {
         @Override
         public Sendable processMail(Sendable mail) {
             return mail;
@@ -177,9 +177,6 @@ public class MailTest {
     public static class IllegalPackageException extends RuntimeException {}
     public static class StolenPackageException extends RuntimeException {}
 
-    /*
-    Вор
-     */
     public static class Thief implements MailService {
         private final int minPriceContent;
         private int sumAllStolen;
@@ -196,29 +193,27 @@ public class MailTest {
         public Sendable processMail(Sendable mail) {
             if (mail instanceof MailPackage) {
                 Package box = ((MailPackage) mail).getContent();
+                String content = String.format("stones instead of %s", box.getContent());
                 if (box.getPrice() >= minPriceContent) {
                     sumAllStolen += box.getPrice();
                     return new MailPackage(mail.getFrom(), mail.getTo(),
-                            new Package("stones instead of " + box.getContent(), 0));
+                            new Package(content, 0));
                 }
             }
             return mail;
         }
     }
 
-    /*
-    Инспектор
-     */
-    public static class Inspector implements MailService{
+    public static class Inspector implements MailService {
         @Override
         public Sendable processMail(Sendable mail) {
-            if(mail instanceof MailPackage) {
+            if (mail instanceof MailPackage) {
                 Package box = ((MailPackage)mail).getContent();
                 String content = box.getContent();
-                if(content.equals(WEAPONS) || content.equals(BANNED_SUBSTANCE)) {
+                if (content.contains(WEAPONS) || content.contains(BANNED_SUBSTANCE)) {
                     throw new IllegalPackageException();
                 }
-                if(content.indexOf("stones") == 0) {
+                if (content.indexOf("stones") == 0) {
                     throw new StolenPackageException();
                 }
             }
@@ -226,18 +221,15 @@ public class MailTest {
         }
     }
 
-    /*
-     Сотрудник почт. отделения
-     */
-    public static class UntrustworthyMailWorker implements MailService {
-        private final MailService realMailService = new RealMailService();
-        private MailService[] mailServices;
+    public static class UntrustworthyMailWorker extends RealMailService {
+        private final RealMailService realMailService = new RealMailService();
+        private final MailService[] mailServices;
 
         public UntrustworthyMailWorker(MailService[] services) {
             mailServices = services;
         }
 
-        public MailService getRealMailService(){
+        public MailService getRealMailService() {
             return realMailService;
         }
 
@@ -247,14 +239,33 @@ public class MailTest {
             for (int i = 0; i < mailServices.length; i++) {
                 processed = mailServices[i].processMail(processed);
             }
-            return realMailService.processMail(mail);
+            return realMailService.processMail(processed);
         }
     }
 
-    /*
-    Шпион
-     */
-    public static class Spy {
+    public static class Spy implements MailService {
+        private Logger LOGGER;
+        public Spy(Logger logger) {
+            LOGGER = logger;
+        }
+
+        @Override
+        public Sendable processMail(Sendable mail) {
+            if(mail instanceof MailMessage) {
+                MailMessage mailMessage = (MailMessage) mail;
+                String from = mailMessage.getFrom();
+                String to = mailMessage.getTo();
+                String message = mailMessage.getMessage();
+                String warningMessage = String.format("Detected target mail correspondence: from %s to %s \"%s\"", from, to, message);
+                String infoMessage = String.format("Usual correspondence: from %s to %s", from, to);
+                if (from.equals(AUSTIN_POWERS) || to.equals(AUSTIN_POWERS)) {
+                    LOGGER.warning(warningMessage);
+                } else {
+                    LOGGER.info(infoMessage);
+                }
+            }
+            return mail;
+        }
     }
 
 
